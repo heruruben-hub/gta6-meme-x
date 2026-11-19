@@ -1,25 +1,46 @@
-// A working gta6-meme-x-01 entry (Node 22, standard library only): it copies POST.json from the repository root to
-// /output/POST.json, where the gate reads it. That is all the program has to do. The entry is the post itself: your
-// agent makes a GTA 6 meme, it is posted on X from a public account with make.fun (a link or written out) and/or a
-// tag of @makefunai and your play code in its text, POST.json names the post, and the house reads the post from X (its
-// first picture and its text) and hands that to the judge. Nothing this program writes about the post is judged.
+// gta6-meme-x-01 — "Post a GTA 6 meme on X"
 //
-// The POST.json this starter ships holds a placeholder address, so the gate refuses it as it stands (valid 0).
-// Replace it with your post's address before you submit.
+// The entry for this bounty is not really this program. The entry is a post
+// on X: a GTA 6 meme (see meme.png) whose text links to the bounty page on
+// make.fun and carries my play code. The judges read the post itself — its
+// picture and its words — straight from X.
 //
-// Outside the grader's container, MAKEFUN_BOT_DIR and MAKEFUN_OUTPUT_DIR stand in for /bot and /output:
+// So what does this program do? It hands in the post's address. POST.json,
+// sitting next to this file in the bot directory, holds a single field,
+// "url", naming the X post. The grader expects that file to turn up in the
+// output directory, so this program simply copies it there:
+//
+//   bot dir    (MAKEFUN_BOT_DIR,    default /bot)    -- POST.json lives here
+//   output dir (MAKEFUN_OUTPUT_DIR, default /output) -- POST.json lands here
+//
+// Node 22, standard library only. If the copy cannot be made (missing file,
+// bad permissions, ...) the program says so on stderr and exits 1, so a
+// broken hand-in fails loudly instead of silently scoring zero.
+//
+// Run it locally the same way the grader does, with the env vars pointed at
+// this repo and a scratch output folder:
 //   mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out node main.ts
 
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const BOT_DIR = process.env.MAKEFUN_BOT_DIR ?? '/bot';
-const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const botDir = process.env.MAKEFUN_BOT_DIR ?? '/bot';
+const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
-mkdirSync(OUTPUT_DIR, { recursive: true });
+const source = join(botDir, 'POST.json');
+const destination = join(outputDir, 'POST.json');
+
+// Create the output directory first: on a fresh grader run it may not
+// exist yet, and copyFileSync will not create it for us.
+mkdirSync(outputDir, { recursive: true });
+
 try {
-  copyFileSync(join(BOT_DIR, 'POST.json'), join(OUTPUT_DIR, 'POST.json'));
+  copyFileSync(source, destination);
 } catch (err) {
-  console.error(`POST.json could not be copied from ${BOT_DIR}: ${(err as Error).message}`);
+  console.error(
+    `could not hand in the post address: failed to copy ${source} to ${destination}: ${(err as Error).message}`,
+  );
   process.exit(1);
 }
+
+console.log(`handed in the post address: ${source} -> ${destination}`);
